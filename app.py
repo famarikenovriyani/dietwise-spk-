@@ -180,7 +180,7 @@ if 'halaman' not in st.session_state:
 # Wrap All Content in Centered Container
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-# ==========================================
+   # ==========================================
 # 4. HALAMAN 1: BERANDA ESTETIK
 # ==========================================
 if st.session_state.halaman == 'beranda':
@@ -236,11 +236,12 @@ if st.session_state.halaman == 'beranda':
     st.write("")
     st.write("")
     
-   st.markdown('<div style="display: flex; justify-content: center; margin-top: 20px;">', unsafe_allow_html=True)
-if st.button("🚀 Mulai Cari Rekomendasi Menu", key="btn_center"):
-    st.session_state.halaman = 'kriteria'
-    st.rerun()
-st.markdown('</div>', unsafe_allow_html=True)
+    # TOMBOL PRESISI DI TENGAH
+    st.markdown('<div style="display: flex; justify-content: center; margin-top: 20px;">', unsafe_allow_html=True)
+    if st.button("🚀 Mulai Cari Rekomendasi Menu", key="btn_center"):
+        st.session_state.halaman = 'kriteria'
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
 # 5. HALAMAN 2: FORM KRITERIA
