@@ -99,7 +99,7 @@ st.markdown(
 )
 
 # ===================== LOGO =====================
-logo_path = "logo.png"
+logo_path = "logo_dietwise.png"
 if os.path.exists(logo_path):
     logo = Image.open(logo_path)
     st.sidebar.image(logo, width=200)
