@@ -105,7 +105,7 @@ if os.path.exists(logo_path):
     st.sidebar.image(logo, width=200)
 else:
     st.sidebar.markdown("## 🥗 DietWise")
-    st.sidebar.caption("(Tambahkan file logo.png untuk logo)")
+    st.sidebar.caption("(logo_dietwise.png)")
 
 # ===================== INISIALISASI SESSION STATE =====================
 if "page" not in st.session_state:
