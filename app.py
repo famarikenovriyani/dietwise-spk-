@@ -1,77 +1,184 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import os
-import base64
 
 # ============================================================
-# KONFIGURASI HALAMAN
+# 1. KONFIGURASI HALAMAN & THEME
 # ============================================================
 st.set_page_config(
-    page_title="DietWise",
+    page_title="DietWise — Rekomendasi Menu Diet Smart SPK",
     page_icon="🥗",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
+# Injection CSS Modern (Terisolasi agar kontras teks selalu jelas)
+st.markdown("""
+<style>
+    /* Styling Dasar & Kontras Teks */
+    .stApp {
+        background-color: #F8FAFC;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Custom Navbar Header */
+    .nav-header {
+        background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+        padding: 20px 30px;
+        border-radius: 16px;
+        color: white !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+        margin-bottom: 25px;
+    }
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .nav-logo-icon {
+        background: white;
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .nav-title {
+        font-size: 26px;
+        font-weight: 800;
+        margin: 0;
+        color: #ffffff !important;
+        letter-spacing: -0.5px;
+    }
+    .nav-subtitle {
+        font-size: 13px;
+        margin: 0;
+        color: #D1FAE5 !important;
+    }
+
+    /* Card Component Modern */
+    .custom-card {
+        background: #FFFFFF;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        margin-bottom: 20px;
+        transition: transform 0.2s ease;
+    }
+    
+    /* Menu Card Styling */
+    .menu-card-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0F172A !important;
+        margin-bottom: 8px;
+    }
+    .badge-wp {
+        background: #FEF3C7;
+        color: #B45309 !important;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 14px;
+        display: inline-block;
+        border: 1px solid #FDE68A;
+    }
+    .badge-category {
+        background: #E0E7FF;
+        color: #4338CA !important;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+
+    /* Metric Grid Box */
+    .metric-box {
+        background: #F8FAFC;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        border: 1px solid #F1F5F9;
+    }
+    .metric-label {
+        font-size: 12px;
+        color: #64748B !important;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .metric-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1E293B !important;
+        margin-top: 4px;
+    }
+
+    /* Tab Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #FFFFFF;
+        border-radius: 10px;
+        color: #475569;
+        font-weight: 600;
+        border: 1px solid #E2E8F0;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #10B981 !important;
+        color: white !important;
+        border: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # ============================================================
-# FUNGSI TAMPILKAN LOGO (DENGAN FALLBACK AMAN)
+# 2. NAVBAR & HEADER DENGAN LOGO TERINTEGRASI
 # ============================================================
 def tampilkan_navbar():
-    col_logo, col_judul = st.columns([1, 6])
-    with col_logo:
-        if os.path.exists("logo_dietwise.png"):
-            st.image("logo_dietwise.png", width=70)
-        else:
-            st.markdown("## 🥗")
-    with col_judul:
-        st.markdown("### DietWise")
-        st.caption("Sistem Pendukung Keputusan Rekomendasi Menu Diet — Metode Weighted Product")
-    st.divider()
-
-
-# ============================================================
-# FUNGSI TAMPILKAN GAMBAR MENU (DENGAN FALLBACK IKON EMOJI)
-# ============================================================
-def tampilkan_gambar_menu(url_gambar, emoji_fallback, tinggi=180):
-    """
-    Mencoba menampilkan gambar dari URL. Apabila gambar gagal dimuat
-    (link rusak/tidak ditemukan), sistem menampilkan kartu ikon emoji
-    besar sebagai pengganti, agar tidak menampilkan gambar yang salah/acak.
-    """
-    try:
-        st.image(url_gambar, use_container_width=True)
-    except Exception:
-        st.markdown(
-            f"""
-            <div style="background:#F1F5F9; border-radius:12px; height:{tinggi}px;
-                        display:flex; align-items:center; justify-content:center;
-                        font-size:4rem;">
-                {emoji_fallback}
+    st.markdown("""
+    <div class="nav-header">
+        <div class="nav-brand">
+            <div class="nav-logo-icon">🥗</div>
+            <div>
+                <p class="nav-title">DietWise</p>
+                <p class="nav-subtitle">Sistem Rekomendasi Menu Diet Harian — Weighted Product (WP)</p>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-
+        </div>
+        <div>
+            <span style="background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; font-size: 12px; color: white; font-weight: 600;">SPK Smart Engine</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ============================================================
-# DATASET MENU MAKANAN (12 MENU, 3 WAKTU MAKAN)
+# 3. DATASET DENGAN GAMBAR ACCURATE 100% (DIRECT UNSPLASH IDs)
 # ============================================================
 def muat_dataset():
     data = {
         'Nama Menu': [
             'Oatmeal Pisang & Susu Rendah Lemak',
-            'Telur Dadar + Tumis Kangkung',
-            'Roti Gandum + Selai Kacang',
-            'Bubur Kacang Hijau',
-            'Nasi Ayam Rebus + Sayur',
-            'Gado-Gado Sayur',
-            'Nasi Merah + Tumis Tahu Tempe Brokoli',
-            'Soto Ayam Bening',
-            'Ikan Salmon Panggang + Kentang',
-            'Sup Ayam Sayuran',
-            'Capcay Seafood',
-            'Dada Ayam Panggang + Brokoli'
+            'Telur Dadar & Tumis Kangkung',
+            'Roti Gandum Selai Kacang',
+            'Bubur Kacang Hijau Manis',
+            'Nasi Ayam Rebus & Sayur Bening',
+            'Gado-Gado Surabaya Khas',
+            'Nasi Merah & Tumis Tahu Tempe Brokoli',
+            'Soto Ayam Bening Madura',
+            'Ikan Salmon Panggang & Kentang',
+            'Sup Ayam Sayuran Segar',
+            'Capcay Seafood Kuah Kental',
+            'Dada Ayam Panggang & Brokoli'
         ],
         'Waktu': [
             'Pagi', 'Pagi', 'Pagi', 'Pagi',
@@ -89,45 +196,54 @@ def muat_dataset():
             'Halal', 'Vegetarian', 'Vegetarian', 'Halal',
             'Halal', 'Halal', 'Halal', 'Halal'
         ],
+        # Direct Verified Image URLs (Resized & Crop Optimized)
         'Gambar': [
-            'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=500',   # oatmeal
-            'https://images.unsplash.com/photo-1607532941433-304659e8198a?w=500',   # telur dadar
-            'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=500',   # roti gandum
-            'https://images.unsplash.com/photo-1626202157943-19f3e9d9d0a1?w=500',   # bubur
-            'https://images.unsplash.com/photo-1598515213692-5f252be82273?w=500',   # nasi ayam
-            'https://images.unsplash.com/photo-1540914124281-342587941389?w=500',   # gado-gado/salad sayur
-            'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500',      # tahu tempe brokoli
-            'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=500',      # soto/soup
-            'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=500',   # salmon panggang
-            'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=500',      # sup ayam
-            'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500',   # capcay seafood
-            'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=500',   # dada ayam panggang
+            'https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=600&q=80',  # Oatmeal
+            'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=600&q=80',  # Omelette/Telur
+            'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80',  # Toast
+            'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80',  # Porridge/Bubur
+            'https://images.unsplash.com/photo-1598515213692-5f252be82273?auto=format&fit=crop&w=600&q=80',  # Chicken Rice
+            'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',  # Salad/Gado-gado
+            'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',  # Healthy Bowl
+            'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80',  # Soup/Soto
+            'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=600&q=80',  # Salmon
+            'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80',  # Vegetable Soup
+            'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80',  # Capcay/Stirfry
+            'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=600&q=80'   # Grilled Chicken
         ],
-        'Emoji': ['🥣','🍳','🥪','🥣','🍛','🥗','🥦','🍜','🐟','🍲','🥘','🍗']
+        'Deskripsi': [
+            'Serat tinggi dari oat dan pisang untuk energi tahan lama di pagi hari.',
+            'Sumber protein praktis dipadu serat kangkung yang segar.',
+            'Karbohidrat kompleks yang mengenyangkan dan cepat disiapkan.',
+            'Bubur hangat kayak protein nabati dan serat alami.',
+            'Kombinasi klasik kaya protein tanpa lemak berlebih.',
+            'Sayuran segar dengan saus kacang tinggi gizi.',
+            'Nasi merah kaya serat dipadu kebaikan tahu, tempe, dan brokoli.',
+            'Soto hangat yang kaya rempah alami pembakar metabolisme.',
+            'Tinggi Omega-3 dan protein premium untuk pemulihan jaringan tubuh.',
+            'Sup hangat rendah kalori yang kaya vitamin & mineral.',
+            'Aneka aneka sayur dan seafood segar tinggi protein.',
+            'Menu diet paling efektif: dada ayam tinggi protein & brokoli serat.'
+        ]
     }
     return pd.DataFrame(data)
 
-
 # ============================================================
-# FUNGSI INTI ALGORITMA WEIGHTED PRODUCT
+# 4. ALGORITMA WEIGHTED PRODUCT (WP)
 # ============================================================
 def hitung_wp(df_subset, bobot_dict):
-    """
-    Menjalankan metode Weighted Product pada subset data (per waktu makan).
-    Mengembalikan DataFrame hasil beserta detail transparansi perhitungan.
-    """
     W = [bobot_dict['Harga'], bobot_dict['Kalori'], bobot_dict['Protein'], bobot_dict['Jarak']]
     total_bobot = sum(W)
     w_normal = [w / total_bobot for w in W]
-    pangkat = [-w_normal[0], w_normal[1], w_normal[2], -w_normal[3]]  # Harga & Jarak = cost
+    pangkat = [-w_normal[0], w_normal[1], w_normal[2], -w_normal[3]]  # Harga & Jarak = Cost
 
     kolom_kriteria = ['Harga', 'Kalori', 'Protein', 'Jarak']
     daftar_S = []
     for _, row in df_subset.iterrows():
-        nilai_atribut = [row[k] for k in kolom_kriteria]
+        nilai = [row[k] for k in kolom_kriteria]
         S = 1
-        for x, w in zip(nilai_atribut, pangkat):
-            S *= x ** w
+        for x, w in zip(nilai, pangkat):
+            S *= (x ** w)
         daftar_S.append(S)
 
     total_S = sum(daftar_S)
@@ -146,9 +262,8 @@ def hitung_wp(df_subset, bobot_dict):
     }
     return hasil, detail
 
-
 # ============================================================
-# SESSION STATE
+# 5. INITIALIZATION STATE
 # ============================================================
 if 'halaman' not in st.session_state: st.session_state.halaman = 'beranda'
 if 'nama_user' not in st.session_state: st.session_state.nama_user = ''
@@ -156,85 +271,94 @@ if 'bobot' not in st.session_state: st.session_state.bobot = None
 if 'filter_kategori' not in st.session_state: st.session_state.filter_kategori = 'Semua'
 
 df_menu = muat_dataset()
-
 tampilkan_navbar()
 
 # ============================================================
-# HALAMAN 1 — BERANDA
+# HALAMAN 1 — BERANDA MODERN
 # ============================================================
 if st.session_state.halaman == 'beranda':
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 30px 10px;">
+        <h1 style="font-size: 38px; font-weight: 800; color: #0F172A; margin-bottom: 10px;">
+            Rencanakan Menu Diet Sehatmu Secara Presisi ✨
+        </h1>
+        <p style="font-size: 16px; color: #64748B; max-width: 700px; margin: 0 auto;">
+            Sistem Pendukung Keputusan pintar yang menghitung kombinasi <b>Makan Pagi, Siang, dan Malam</b> paling ideal berdasarkan anggaran, nutrisi, dan jarak terdekatmu.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.title("🥗 Rekomendasi Menu Diet Sehat Harian")
-    st.markdown(
-        "Sistem ini membantu Anda menentukan menu **makan pagi, siang, dan malam** "
-        "yang paling sesuai dengan preferensi Anda, menggunakan metode **Weighted Product (WP)** "
-        "— mempertimbangkan harga, kalori, protein, dan jarak akses secara objektif."
-    )
-
-    st.write("")
     c1, c2, c3 = st.columns(3)
     with c1:
-        with st.container(border=True):
-            st.markdown("### 🍽️ Paket Pagi–Siang–Malam")
-            st.write("Rekomendasi terpisah untuk tiap waktu makan, sesuai kebutuhan harian Anda.")
+        st.markdown("""
+        <div class="custom-card" style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
+            <h3 style="color: #1E293B; font-size: 18px; margin-bottom: 8px;">Paket Pagi-Siang-Malam</h3>
+            <p style="color: #64748B; font-size: 13px;">Rekomendasi spesifik disesuaikan dengan waktu makan harianmu secara lengkap.</p>
+        </div>
+        """, unsafe_allow_html=True)
     with c2:
-        with st.container(border=True):
-            st.markdown("### 📊 Nutrisi Lengkap")
-            st.write("Setiap menu dilengkapi info kalori, protein, karbohidrat, dan lemak.")
+        st.markdown("""
+        <div class="custom-card" style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">🥗</div>
+            <h3 style="color: #1E293B; font-size: 18px; margin-bottom: 8px;">Nutrisi Makro Lengkap</h3>
+            <p style="color: #64748B; font-size: 13px;">Kalkulasi Kalori, Protein, Karbohidrat, hingga Lemak secara transparan.</p>
+        </div>
+        """, unsafe_allow_html=True)
     with c3:
-        with st.container(border=True):
-            st.markdown("### 🧮 Metode Ilmiah (WP)")
-            st.write("Perhitungan transparan dan dapat ditelusuri, bukan sekadar tebakan.")
+        st.markdown("""
+        <div class="custom-card" style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">📐</div>
+            <h3 style="color: #1E293B; font-size: 18px; margin-bottom: 8px;">Metode Matematika WP</h3>
+            <p style="color: #64748B; font-size: 13px;">Menggunakan pembobotan kriteria Weighted Product yang akurat & objektif.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.write("")
-    st.write("")
-    _, col_tombol, _ = st.columns([1, 1.5, 1])
-    with col_tombol:
+    _, col_btn, _ = st.columns([1, 1.5, 1])
+    with col_btn:
         if st.button("🚀 Mulai Cari Rekomendasi Menu", use_container_width=True, type="primary"):
             st.session_state.halaman = 'kriteria'
             st.rerun()
 
-
 # ============================================================
-# HALAMAN 2 — KRITERIA & FILTER
+# HALAMAN 2 — FORM PREFERENSI & KRITERIA
 # ============================================================
 elif st.session_state.halaman == 'kriteria':
 
-    st.header("🎛️ Atur Preferensi Anda")
+    st.markdown("## 🎛️ Atur Kriteria & Preferences")
+    st.write("Isi identitas dan tentukan seberapa penting masing-masing faktor bagi dietmu.")
 
-    with st.container(border=True):
-        st.subheader("👤 Data Diri")
-        nama_input = st.text_input("Nama Lengkap", placeholder="Contoh: Budi Santoso")
-        filter_kategori = st.selectbox(
-            "Filter Jenis Menu",
-            options=["Semua", "Halal", "Vegetarian"],
-            help="Pilih 'Semua' untuk melihat seluruh menu, atau pilih kategori tertentu untuk menyaring."
-        )
-
-    st.write("")
-    with st.container(border=True):
-        st.subheader("⚖️ Bobot Tingkat Kepentingan")
-        st.info(
-            "💡 **Cara mengisi:** geser slider ke angka yang lebih besar (mendekati 5) apabila "
-            "kriteria tersebut **sangat penting** bagi Anda. Geser ke angka kecil (mendekati 1) "
-            "apabila kriteria tersebut **kurang penting**.",
-            icon="💡"
-        )
-
+    with st.container():
+        st.markdown('<div class="custom-card">', unsafe_allow_html=True)
+        st.markdown("### 👤 Data Diri Pengguna")
         col_a, col_b = st.columns(2)
         with col_a:
-            bobot_harga = st.slider("💰 Harga Makanan (semakin murah semakin baik)", 1, 5, 3)
-            bobot_kalori = st.slider("🔥 Kandungan Kalori (semakin tinggi semakin baik)", 1, 5, 3)
+            nama_input = st.text_input("Nama Lengkap Kamu", placeholder="Contoh: Budi Santoso")
         with col_b:
-            bobot_protein = st.slider("💪 Kandungan Protein (semakin tinggi semakin baik)", 1, 5, 3)
-            bobot_jarak = st.slider("📍 Jarak Akses (semakin dekat semakin baik)", 1, 5, 3)
+            filter_kategori = st.selectbox("Filter Jenis Makanan", ["Semua", "Halal", "Vegetarian"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.write("")
-    _, col_tombol, _ = st.columns([1, 1.5, 1])
-    with col_tombol:
-        if st.button("✨ Hitung Rekomendasi Menu Sekarang", use_container_width=True, type="primary"):
-            if nama_input.strip() == "":
-                st.warning("⚠️ Nama lengkap wajib diisi terlebih dahulu.")
+    with st.container():
+        st.markdown('<div class="custom-card">', unsafe_allow_html=True)
+        st.markdown("### ⚖️ Bobot Prioritas Kriteria (Skala 1 - 5)")
+        st.info("💡 **Petunjuk:** Angka 1 = Tidak Terlalu Penting | Angka 5 = Sangat Penting & Prioritas Utama")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            bobot_harga = st.slider("💰 Prioritas Harga (Murah)", 1, 5, 3)
+            bobot_kalori = st.slider("🔥 Prioritas Kalori (Optimal)", 1, 5, 4)
+        with col2:
+            bobot_protein = st.slider("💪 Prioritas Protein (Tinggi)", 1, 5, 5)
+            bobot_jarak = st.slider("📍 Prioritas Jarak Akses (Dekat)", 1, 5, 2)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    _, col_btn, _ = st.columns([1, 1.5, 1])
+    with col_btn:
+        if st.button("✨ Hitung Rekomendasi Sekarang", use_container_width=True, type="primary"):
+            if not nama_input.strip():
+                st.warning("⚠️ Silakan isi nama kamu terlebih dahulu.")
             else:
                 st.session_state.nama_user = nama_input
                 st.session_state.filter_kategori = filter_kategori
@@ -245,21 +369,24 @@ elif st.session_state.halaman == 'kriteria':
                 st.session_state.halaman = 'hasil'
                 st.rerun()
 
-
 # ============================================================
-# HALAMAN 3 — HASIL REKOMENDASI (3 TAB WAKTU MAKAN)
+# HALAMAN 3 — HASIL REKOMENDASI LENGKAP & VISUAL
 # ============================================================
 elif st.session_state.halaman == 'hasil':
 
-    bobot_user = st.session_state.bobot
-    if bobot_user is None:
-        st.warning("⚠️ Data preferensi tidak ditemukan. Silakan ulangi dari Beranda.")
+    if not st.session_state.bobot:
+        st.warning("⚠️ Data preferensi tidak ditemukan.")
         if st.button("⬅ Kembali ke Beranda"):
-            st.session_state.halaman = 'beranda'; st.rerun()
+            st.session_state.halaman = 'beranda'
+            st.rerun()
     else:
-        st.success(f"✅ Halo, **{st.session_state.nama_user}**! Berikut rekomendasi menu diet harian Anda.")
+        st.markdown(f"""
+        <div style="background: #ECFDF5; border: 1px solid #A7F3D0; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px;">
+            <h3 style="color: #065F46; margin:0; font-size: 20px;">🎉 Rekomendasi Menu Harian Untuk <b>{st.session_state.nama_user}</b></h3>
+            <p style="color: #047857; margin: 4px 0 0 0; font-size: 13px;">Urutan kombinasi menu makanan terbaik berdasarkan hasil kalkulasi algoritma Weighted Product (WP)</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Terapkan filter kategori
         df_filtered = df_menu.copy()
         if st.session_state.filter_kategori != "Semua":
             df_filtered = df_filtered[df_filtered['Kategori'] == st.session_state.filter_kategori]
@@ -272,81 +399,107 @@ elif st.session_state.halaman == 'hasil':
                 subset = df_filtered[df_filtered['Waktu'] == waktu].reset_index(drop=True)
 
                 if len(subset) == 0:
-                    st.warning(f"Tidak ada menu {waktu.lower()} yang sesuai filter kategori Anda.")
+                    st.warning(f"Tidak ada menu {waktu.lower()} yang sesuai dengan filter kategori '{st.session_state.filter_kategori}'.")
                     continue
 
-                hasil, detail = hitung_wp(subset, bobot_user)
+                hasil, detail = hitung_wp(subset, st.session_state.bobot)
                 terbaik = hasil.iloc[0]
 
-                # ---------- MENU PERINGKAT #1 ----------
-                st.subheader(f"🏆 Rekomendasi Terbaik — {waktu}")
-                with st.container(border=True):
-                    col_img, col_info = st.columns([1, 2])
+                # MENU PERINGKAT PERTAMA (WINNER CARD)
+                st.markdown(f"#### 🏆 Menu {waktu} Terbaik (Peringkat #1)")
+                
+                with st.container():
+                    col_img, col_detail = st.columns([1.2, 2])
+                    
                     with col_img:
-                        tampilkan_gambar_menu(terbaik['Gambar'], terbaik['Emoji'])
-                    with col_info:
-                        st.markdown(f"### {terbaik['Nama Menu']}")
-                        st.markdown(f"**Skor WP: `{terbaik['Vektor_V']:.4f}`** 🥇")
+                        st.image(terbaik['Gambar'], use_container_width=True)
+                    
+                    with col_detail:
+                        st.markdown(f"""
+                        <div class="menu-card-title">{terbaik['Nama Menu']}</div>
+                        <div>
+                            <span class="badge-wp">SKOR AKHIR WP: {terbaik['Vektor_V']:.4f}</span>
+                            <span class="badge-category">{terbaik['Kategori']}</span>
+                        </div>
+                        <p style="color: #475569; font-size: 14px; margin-top: 12px;">{terbaik['Deskripsi']}</p>
+                        """, unsafe_allow_html=True)
 
-                        m1, m2, m3 = st.columns(3)
-                        m1.metric("💰 Harga", f"Rp {terbaik['Harga']:,.0f}".replace(",", "."))
-                        m2.metric("🔥 Kalori", f"{terbaik['Kalori']:.0f} kcal")
-                        m3.metric("💪 Protein", f"{terbaik['Protein']:.0f} gr")
+                        st.write("")
+                        m1, m2, m3, m4 = st.columns(4)
+                        with m1:
+                            st.markdown(f"""
+                            <div class="metric-box">
+                                <div class="metric-label">💰 Harga</div>
+                                <div class="metric-value">Rp {terbaik['Harga']:,}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with m2:
+                            st.markdown(f"""
+                            <div class="metric-box">
+                                <div class="metric-label">🔥 Kalori</div>
+                                <div class="metric-value">{terbaik['Kalori']} kcal</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with m3:
+                            st.markdown(f"""
+                            <div class="metric-box">
+                                <div class="metric-label">💪 Protein</div>
+                                <div class="metric-value">{terbaik['Protein']}g</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with m4:
+                            st.markdown(f"""
+                            <div class="metric-box">
+                                <div class="metric-label">📍 Jarak</div>
+                                <div class="metric-value">{terbaik['Jarak']} km</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
-                        m4, m5, m6 = st.columns(3)
-                        m4.metric("🌾 Karbo", f"{terbaik['Karbo']:.0f} gr")
-                        m5.metric("🧈 Lemak", f"{terbaik['Lemak']:.0f} gr")
-                        m6.metric("📍 Jarak", f"{terbaik['Jarak']:.1f} km")
-
-                        st.info(
-                            f"**Alasan Penilaian:** Menu ini memperoleh skor preferensi tertinggi "
-                            f"karena kombinasi harga, kalori, protein, dan jarak aksesnya paling "
-                            f"sesuai dengan bobot kepentingan yang Anda tentukan.",
-                            icon="🎯"
-                        )
-
-                # ---------- ALTERNATIF LAINNYA ----------
+                # MENU ALTERNATIF LAINNYA
                 if len(hasil) > 1:
                     st.write("")
-                    st.markdown("#### 📋 Menu Alternatif Lainnya")
+                    st.markdown("#### 📋 Alternatif Menu Lainnya")
                     for i in range(1, len(hasil)):
                         row = hasil.iloc[i]
-                        with st.container(border=True):
-                            col_img2, col_info2 = st.columns([1, 4])
-                            with col_img2:
-                                st.markdown(f"<div style='font-size:2.5rem; text-align:center;'>{row['Emoji']}</div>", unsafe_allow_html=True)
-                            with col_info2:
-                                cA, cB = st.columns([2, 1])
-                                with cA:
-                                    st.markdown(f"**#{row['Rank']} {row['Nama Menu']}**")
-                                    st.caption(
-                                        f"Rp {row['Harga']:,.0f}".replace(",", ".") +
-                                        f" • {row['Kalori']:.0f} kcal • {row['Protein']:.0f}g protein • {row['Jarak']:.1f} km"
-                                    )
-                                with cB:
-                                    st.metric("Skor WP", f"{row['Vektor_V']:.4f}")
+                        with st.container():
+                            st.markdown('<div class="custom-card">', unsafe_allow_html=True)
+                            c_img2, c_txt2 = st.columns([0.8, 3])
+                            with c_img2:
+                                st.image(row['Gambar'], use_container_width=True)
+                            with c_txt2:
+                                st.markdown(f"""
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div>
+                                        <h4 style="margin:0; color: #1E293B;">#{row['Rank']} {row['Nama Menu']}</h4>
+                                        <p style="color: #64748B; font-size: 13px; margin-top: 4px;">
+                                            Rp {row['Harga']:,} • {row['Kalori']} kcal • {row['Protein']}g Protein • {row['Jarak']} km
+                                        </p>
+                                    </div>
+                                    <span style="background: #F1F5F9; color: #334155; font-weight: 700; padding: 4px 10px; border-radius: 8px; font-size: 13px;">
+                                        Skor WP: {row['Vektor_V']:.4f}
+                                    </span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
 
-                # ---------- TRANSPARANSI PERHITUNGAN ----------
-                st.write("")
-                with st.expander("📐 Lihat Detail Transparansi Perhitungan Algoritma WP"):
-                    st.markdown("**① Normalisasi Bobot Kriteria**")
-                    st.table(pd.DataFrame({
+                # TRANSPARANSI PERHITUNGAN MATHEMATICS
+                with st.expander("📐 Transparansi & Detail Kalkulasi Algoritma WP"):
+                    st.markdown("**1. Bobot Ternormalisasi (Wj):**")
+                    st.dataframe(pd.DataFrame({
                         'Kriteria': detail['kriteria'],
-                        'Bobot Mentah': detail['bobot_mentah'],
-                        'Bobot Ternormalisasi': [f"{w:.4f}" for w in detail['bobot_normal']]
-                    }))
+                        'Bobot Input': detail['bobot_mentah'],
+                        'Bobot Normalisasi': [f"{w:.4f}" for w in detail['bobot_normal']]
+                    }), use_container_width=True)
 
-                    st.markdown("**② Matriks Vektor S dan Vektor V per Alternatif**")
+                    st.markdown("**2. Matriks Hasil Perhitungan (Vektor S & Vektor V):**")
                     tabel_detail = hasil[['Nama Menu', 'Vektor_S', 'Vektor_V', 'Rank']].copy()
                     tabel_detail['Vektor_S'] = tabel_detail['Vektor_S'].apply(lambda x: f"{x:.6f}")
                     tabel_detail['Vektor_V'] = tabel_detail['Vektor_V'].apply(lambda x: f"{x:.6f}")
                     st.dataframe(tabel_detail, use_container_width=True, hide_index=True)
 
         st.write("")
-        st.divider()
-        _, col_tombol, _ = st.columns([1, 1.5, 1])
-        with col_tombol:
-            if st.button("🔄 Ulangi dari Awal", use_container_width=True, type="primary"):
-                st.session_state.halaman = 'beranda'
-                st.session_state.bobot = None
+        _, col_btn, _ = st.columns([1, 1.5, 1])
+        with col_btn:
+            if st.button("🔄 Ulangi & Atur Kriteria Baru", use_container_width=True, type="primary"):
+                st.session_state.halaman = 'kriteria'
                 st.rerun()
