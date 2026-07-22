@@ -232,7 +232,6 @@ logo_b64 = get_base64_image("logo_dietwise.png")
 
 @st.cache_data
 def get_menu_data():
-    # Gambar dipastikan presisi sesuai dengan nama menu
     data = [
         {
             "Nama Menu": "Dada Ayam Panggang & Salad",
@@ -268,7 +267,8 @@ def get_menu_data():
             "Nama Menu": "Tumis Tahu Tempe Brokoli",
             "Harga": 12000, "Kalori": 210, "Protein": 16, "Jarak": 0.4,
             "Deskripsi": "Tumisan sehat tahu, tempe, dan brokoli hijau tanpa minyak berlebih, cocok untuk budget hemat.",
-            "Gambar": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600"
+            # Gambar diperbaiki ke hidangan tumisan/tofu bowl
+            "Gambar": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600"
         }
     ]
     return pd.DataFrame(data)
