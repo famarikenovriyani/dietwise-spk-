@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 import os
+import requests
+from io import BytesIO
 
 # ===================== KONFIGURASI HALAMAN =====================
 st.set_page_config(
@@ -12,68 +14,84 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ===================== CSS KUSTOM (AMAN UNTUK LIGHT/DARK) =====================
-# Hanya untuk background dan aksen, tanpa mengubah warna teks menjadi transparan
+# ===================== CSS KUSTOM (GRADASI HIJAU) =====================
 st.markdown(
     """
     <style>
-    /* Gradasi hijau untuk header dan sidebar (hanya pada mode terang) */
+    /* Gradasi hijau-putih untuk header dan sidebar */
     .main-header {
-        background: linear-gradient(90deg, #2e7d32, #66bb6a);
-        padding: 1rem;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #1b5e20, #66bb6a, #a5d6a7);
+        padding: 1.5rem;
+        border-radius: 15px;
         color: white;
         text-align: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     .main-header h1 {
         color: white !important;
-        font-weight: 700;
+        font-weight: 800;
+        font-size: 2.8rem;
+        text-shadow: 1px 1px 4px rgba(0,0,0,0.2);
     }
     .main-header p {
-        color: #f0f0f0 !important;
-        font-size: 1.1rem;
+        color: #f9fbe7 !important;
+        font-size: 1.2rem;
     }
-    /* Sidebar styling */
+    /* Sidebar gradasi */
     .css-1d391kg {
         background: linear-gradient(180deg, #e8f5e9, #ffffff);
     }
-    /* Card shadow */
+    /* Kartu dengan bayangan lembut */
     .stContainer {
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border-radius: 12px;
-        padding: 1rem;
-        background-color: rgba(255,255,255,0.8);
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(2px);
+        border-radius: 16px;
+        padding: 1.2rem;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        border: 1px solid rgba(46,125,50,0.15);
     }
-    /* Tombol utama */
+    /* Tombol utama hijau */
     .stButton button {
-        background-color: #2e7d32;
+        background: linear-gradient(90deg, #2e7d32, #43a047);
         color: white;
-        font-weight: 600;
-        border-radius: 30px;
-        padding: 0.5rem 2rem;
+        font-weight: 700;
+        border-radius: 50px;
+        padding: 0.6rem 2.5rem;
         border: none;
-        transition: 0.3s;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(46,125,50,0.3);
     }
     .stButton button:hover {
-        background-color: #1b5e20;
-        color: white;
-        transform: scale(1.02);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(46,125,50,0.4);
+        background: linear-gradient(90deg, #1b5e20, #2e7d32);
     }
-    /* Metrik */
-    .stMetric {
-        background: #f1f8e9;
+    /* Metrik dengan latar hijau muda */
+    div[data-testid="metric-container"] {
+        background: #e8f5e9;
         border-radius: 12px;
-        padding: 0.5rem;
+        padding: 0.6rem;
+        border-left: 4px solid #2e7d32;
     }
-    /* Badge skor */
+    /* Badge skor WP */
     .badge-wp {
-        background: #ffb300;
+        background: #ffca28;
         color: #1e1e1e;
-        padding: 0.2rem 0.8rem;
-        border-radius: 20px;
-        font-weight: 600;
+        padding: 0.2rem 1rem;
+        border-radius: 30px;
+        font-weight: 700;
         display: inline-block;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    /* Footer hijau */
+    .footer {
+        text-align: center;
+        margin-top: 3rem;
+        color: #2e7d32;
+        font-size: 0.9rem;
+        border-top: 2px solid #a5d6a7;
+        padding-top: 1rem;
     }
     </style>
     """,
@@ -81,8 +99,7 @@ st.markdown(
 )
 
 # ===================== LOGO =====================
-# Asumsikan file logo.png berada di direktori yang sama dengan app.py
-logo_path = "logo_dietwise.png"
+logo_path = "logo.png"
 if os.path.exists(logo_path):
     logo = Image.open(logo_path)
     st.sidebar.image(logo, width=200)
@@ -105,10 +122,12 @@ if "bobot_protein" not in st.session_state:
     st.session_state.bobot_protein = 5
 if "bobot_jarak" not in st.session_state:
     st.session_state.bobot_jarak = 2
+if "jarak_maks" not in st.session_state:
+    st.session_state.jarak_maks = 5.0
 if "rekomendasi" not in st.session_state:
     st.session_state.rekomendasi = {}
 
-# ===================== DATASET INTERNAL (20+ MENU) =====================
+# ===================== DATASET (20 MENU) =====================
 menu_data = [
     # ---------- PAGI ----------
     {
@@ -360,11 +379,37 @@ menu_data = [
         "Deskripsi": "Sup krim jagung dengan potongan wortel dan kentang.",
         "Gambar": "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400",
     },
+    {
+        "Nama Menu": "Nasi Uduk",
+        "Waktu": "Malam",
+        "Harga": 28000,
+        "Kalori": 500,
+        "Protein": 20,
+        "Karbo": 65,
+        "Lemak": 22,
+        "Jarak": 2.2,
+        "Kategori": "Halal",
+        "Deskripsi": "Nasi uduk dengan lauk ayam goreng, tempe, dan sambal.",
+        "Gambar": "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400",
+    },
+    {
+        "Nama Menu": "Capcay",
+        "Waktu": "Malam",
+        "Harga": 32000,
+        "Kalori": 380,
+        "Protein": 16,
+        "Karbo": 35,
+        "Lemak": 12,
+        "Jarak": 2.8,
+        "Kategori": "Vegetarian",
+        "Deskripsi": "Capcay sayuran dengan saus tiram dan bakso ikan.",
+        "Gambar": "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=400",
+    },
 ]
 
 df_menu = pd.DataFrame(menu_data)
 
-# ===================== FUNGSI ALGORITMA WEIGHTED PRODUCT =====================
+# ===================== FUNGSI ALGORITMA WP =====================
 def hitung_wp(df, bobot):
     total_bobot = sum(bobot)
     w_normal = [b / total_bobot for b in bobot]
@@ -378,11 +423,11 @@ def hitung_wp(df, bobot):
     V = S / np.sum(S)
     return V, w_normal
 
-def get_rekomendasi(df, bobot, filter_kategori="Semua"):
+def get_rekomendasi(df, bobot, filter_kategori="Semua", jarak_maks=5.0):
+    # Filter jarak
+    df_filter = df[df["Jarak"] <= jarak_maks].copy()
     if filter_kategori != "Semua":
-        df_filter = df[df["Kategori"] == filter_kategori].copy()
-    else:
-        df_filter = df.copy()
+        df_filter = df_filter[df_filter["Kategori"] == filter_kategori]
     if df_filter.empty:
         return df_filter, None, None
     V, w_normal = hitung_wp(df_filter, bobot)
@@ -390,43 +435,57 @@ def get_rekomendasi(df, bobot, filter_kategori="Semua"):
     df_filter = df_filter.sort_values("Skor_WP", ascending=False)
     return df_filter, V, w_normal
 
-# ===================== FUNGSI RENDER HALAMAN =====================
+# ===================== FUNGSI TAMPILKAN GAMBAR (dengan fallback) =====================
+def load_image(url):
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
+        else:
+            return None
+    except:
+        return None
+
+def render_image(url, caption=""):
+    img = load_image(url)
+    if img:
+        st.image(img, caption=caption, use_container_width=True)
+    else:
+        st.image("https://via.placeholder.com/400x300?text=Gambar+Tidak+Tersedia", caption=caption, use_container_width=True)
+
+# ===================== RENDER HALAMAN =====================
 def render_beranda():
-    # Header dengan gradasi hijau (CSS sudah disisipkan)
     st.markdown(
         """
         <div class="main-header">
             <h1>🍽️ DietWise</h1>
             <p>Sistem Pendukung Keputusan Rekomendasi Menu Diet Harian</p>
-            <p style="font-size:0.9rem; opacity:0.9;">Temukan menu terbaik untuk sarapan, makan siang, dan makan malam sesuai preferensi Anda.</p>
+            <p style="font-size:0.95rem; opacity:0.9;">Temukan menu terbaik untuk sarapan, makan siang, dan makan malam sesuai preferensi dan lokasi Anda.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Tiga kartu keunggulan dengan ikon dan warna
     col1, col2, col3 = st.columns(3)
     with col1:
         with st.container(border=True):
             st.markdown("### 🧠 Cerdas")
-            st.write("Metode Weighted Product memberikan rekomendasi objektif berdasarkan bobot kriteria yang Anda tentukan.")
+            st.write("Metode Weighted Product memberikan rekomendasi objektif berdasarkan bobot kriteria Anda.")
     with col2:
         with st.container(border=True):
             st.markdown("### ⚖️ Fleksibel")
-            st.write("Atur bobot Harga, Kalori, Protein, dan Jarak sesuai skala prioritas pribadi Anda.")
+            st.write("Atur bobot Harga, Kalori, Protein, dan Jarak sesuai skala prioritas pribadi.")
     with col3:
         with st.container(border=True):
-            st.markdown("### 🥗 Lengkap")
-            st.write("Lebih dari 20 pilihan menu dengan filter Halal/Vegetarian untuk semua waktu makan.")
+            st.markdown("### 📍 Lokal")
+            st.write("Filter menu berdasarkan jarak maksimal dari lokasi Anda untuk kenyamanan.")
 
     st.markdown("---")
 
-    # Tombol mulai dengan animasi CSS
     if st.button("🚀 Mulai Cari Rekomendasi Menu", use_container_width=True):
         st.session_state.page = "form"
         st.rerun()
 
-    # Tambahan tips sehat di footer
     with st.expander("💡 Tips Diet Sehat"):
         st.write(
             """
@@ -439,12 +498,11 @@ def render_beranda():
         )
 
 def render_form():
-    # Header
     st.markdown(
         """
         <div class="main-header">
             <h1>📝 Atur Kriteria Diet Anda</h1>
-            <p>Sesuaikan filter dan bobot untuk mendapatkan rekomendasi yang paling sesuai.</p>
+            <p>Sesuaikan filter, bobot, dan jarak maksimal untuk rekomendasi yang personal.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -463,6 +521,16 @@ def render_form():
             index=["Semua", "Halal", "Vegetarian"].index(st.session_state.filter),
         )
         st.session_state.filter = filter_kategori
+
+        st.subheader("📍 Jarak Maksimal dari Lokasi Anda")
+        jarak_maks = st.slider(
+            "Maksimum jarak (km)",
+            min_value=0.5,
+            max_value=10.0,
+            value=st.session_state.jarak_maks,
+            step=0.5,
+        )
+        st.session_state.jarak_maks = jarak_maks
 
     with st.container(border=True):
         st.subheader("⚖️ Bobot Kriteria (1–5)")
@@ -486,7 +554,7 @@ def render_form():
         rekomendasi = {}
         for waktu in ["Pagi", "Siang", "Malam"]:
             df_waktu = df_menu[df_menu["Waktu"] == waktu]
-            df_rek, _, _ = get_rekomendasi(df_waktu, bobot, filter_kategori)
+            df_rek, _, _ = get_rekomendasi(df_waktu, bobot, filter_kategori, jarak_maks)
             rekomendasi[waktu] = df_rek
         st.session_state.rekomendasi = rekomendasi
         st.session_state.page = "hasil"
@@ -508,7 +576,7 @@ def render_hasil():
         unsafe_allow_html=True,
     )
 
-    st.caption(f"👤 {st.session_state.nama}  |  🍽️ Filter: {st.session_state.filter}")
+    st.caption(f"👤 {st.session_state.nama}  |  🍽️ Filter: {st.session_state.filter}  |  📍 Jarak Maks: {st.session_state.jarak_maks} km")
 
     tabs = st.tabs(["🌅 Makan Pagi", "☀️ Makan Siang", "🌙 Makan Malam"])
     waktu_list = ["Pagi", "Siang", "Malam"]
@@ -517,23 +585,21 @@ def render_hasil():
         with tab:
             df_rek = st.session_state.rekomendasi.get(waktu, pd.DataFrame())
             if df_rek.empty:
-                st.info("Tidak ada menu yang sesuai dengan filter yang dipilih untuk waktu ini.")
+                st.info("Tidak ada menu yang sesuai dengan filter dan jarak maksimal untuk waktu ini.")
                 continue
 
-            # Menu terbaik (#1)
             st.subheader("🏆 Menu Terbaik")
             menu_terbaik = df_rek.iloc[0]
 
             col_img, col_info = st.columns([1, 2])
             with col_img:
-                st.image(menu_terbaik["Gambar"], use_container_width=True)
+                render_image(menu_terbaik["Gambar"], caption=menu_terbaik["Nama Menu"])
             with col_info:
                 with st.container(border=True):
                     st.markdown(f"### {menu_terbaik['Nama Menu']}")
                     st.markdown(f"*{menu_terbaik['Deskripsi']}*")
                     st.markdown(f"**Kategori:** {menu_terbaik['Kategori']}")
 
-                    # Nutrisi dengan metrik
                     col_metrik = st.columns(4)
                     with col_metrik[0]:
                         st.metric("💰 Harga", f"Rp {menu_terbaik['Harga']:,.0f}")
@@ -544,18 +610,16 @@ def render_hasil():
                     with col_metrik[3]:
                         st.metric("📍 Jarak", f"{menu_terbaik['Jarak']} km")
 
-                    # Badge skor WP
                     skor = menu_terbaik["Skor_WP"]
                     st.markdown(f"**Skor WP:** <span class='badge-wp'>{skor:.6f}</span>", unsafe_allow_html=True)
 
-            # Menu alternatif (peringkat #2 dst)
             if len(df_rek) > 1:
                 st.subheader("🔄 Menu Alternatif")
                 for i, (idx, row) in enumerate(df_rek.iloc[1:].iterrows(), start=2):
                     with st.container(border=True):
                         col_alt1, col_alt2 = st.columns([1, 3])
                         with col_alt1:
-                            st.image(row["Gambar"], use_container_width=True)
+                            render_image(row["Gambar"], caption=row["Nama Menu"])
                         with col_alt2:
                             st.markdown(f"**#{i} {row['Nama Menu']}**")
                             st.write(row["Deskripsi"])
@@ -571,7 +635,6 @@ def render_hasil():
                                 st.metric("Jarak", f"{row['Jarak']} km")
                             st.markdown(f"**Skor WP:** `{row['Skor_WP']:.6f}`")
 
-            # Expander detail perhitungan WP
             with st.expander("📐 Lihat Detail Perhitungan Weighted Product"):
                 bobot = [
                     st.session_state.bobot_harga,
@@ -580,7 +643,7 @@ def render_hasil():
                     st.session_state.bobot_jarak,
                 ]
                 df_waktu_original = df_menu[df_menu["Waktu"] == waktu]
-                df_calc = df_waktu_original.copy()
+                df_calc = df_waktu_original[df_waktu_original["Jarak"] <= st.session_state.jarak_maks]
                 if st.session_state.filter != "Semua":
                     df_calc = df_calc[df_calc["Kategori"] == st.session_state.filter]
                 if df_calc.empty:
@@ -607,7 +670,7 @@ def render_hasil():
                         "Protein": f"{w_normal[2]:.4f}",
                         "Jarak": f"{w_normal[3]:.4f}",
                     })
-                    st.write("**Tabel S (vektor S) dan V (vektor V) per menu:**")
+                    st.write("**Tabel S dan V per menu:**")
                     st.dataframe(
                         df_calc[["Nama Menu", "Harga", "Kalori", "Protein", "Jarak", "S", "V"]],
                         use_container_width=True,
@@ -618,15 +681,14 @@ def render_hasil():
         st.session_state.page = "form"
         st.rerun()
 
-# ===================== NAVIGASI =====================
+# ===================== MAIN =====================
 def main():
-    # Sidebar dengan informasi tambahan
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🥗 Tentang DietWise")
     st.sidebar.write(
         "DietWise membantu Anda memilih menu diet harian terbaik "
-        "menggunakan metode Weighted Product. Sesuaikan kriteria dan "
-        "dapatkan rekomendasi yang personal."
+        "menggunakan metode Weighted Product. Sesuaikan kriteria, "
+        "filter jarak, dan dapatkan rekomendasi yang personal."
     )
     st.sidebar.markdown("---")
     st.sidebar.caption("Dibuat dengan ❤️ oleh Tim DietWise")
